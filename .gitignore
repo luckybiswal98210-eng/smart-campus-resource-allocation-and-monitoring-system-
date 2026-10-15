@@ -1,0 +1,10 @@
+# Java build files
+bin/
+*.class
+
+# macOS system files
+.DS_Store
+
+# Temporary local database
+*.db
+*.log
