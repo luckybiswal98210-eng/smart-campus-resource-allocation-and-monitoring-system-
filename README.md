@@ -127,22 +127,22 @@ db.password=your_password_here
 
 ## 🚀 6. How to Compile and Run
 
-### Option A: Using Provided Scripts (Recommended)
+### On Windows (Command Prompt, PowerShell, or VS Code):
+- **Option 1 (Easiest):** Just double-click **`run.bat`** (or type `run.bat` in terminal).
+- **Option 2 (Manual commands):**
+  ```cmd
+  javac -cp "lib/*;." -d bin src/com/smartcampus/*.java src/com/smartcampus/*/*.java
+  java -cp "bin;lib/*;." com.smartcampus.Main
+  ```
+  *(Note: Windows uses a semicolon `;` instead of a colon `:` in the classpath).*
+
+### On macOS / Linux:
 ```bash
 # 1. Compile the Java files
 ./compile.sh
 
 # 2. Launch the Application
 ./run.sh
-```
-
-### Option B: Manual Command Line
-```bash
-# Compile
-javac -cp "lib/*:." -d bin src/com/smartcampus/*.java src/com/smartcampus/*/*.java
-
-# Run
-java -cp "bin:lib/*:." com.smartcampus.Main
 ```
 
 ---
