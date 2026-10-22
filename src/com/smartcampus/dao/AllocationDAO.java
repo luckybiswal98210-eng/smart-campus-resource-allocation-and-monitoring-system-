@@ -133,11 +133,51 @@ public class AllocationDAO {
         a.setResourceId(rs.getInt("resource_id"));
         a.setUserId(rs.getInt("user_id"));
         a.setPurpose(rs.getString("purpose"));
-        a.setBookingDate(rs.getDate("booking_date"));
-        a.setStartTime(rs.getTime("start_time"));
-        a.setEndTime(rs.getTime("end_time"));
+
+        // Robust date parsing for MySQL & SQLite
+        try {
+            a.setBookingDate(rs.getDate("booking_date"));
+        } catch (Exception e) {
+            String str = rs.getString("booking_date");
+            if (str != null) {
+                try {
+                    a.setBookingDate(Date.valueOf(str.trim().split(" ")[0]));
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // Robust time parsing
+        try {
+            a.setStartTime(rs.getTime("start_time"));
+        } catch (Exception e) {
+            String str = rs.getString("start_time");
+            if (str != null) {
+                str = str.trim();
+                if (str.length() == 5) str += ":00";
+                try {
+                    a.setStartTime(Time.valueOf(str));
+                } catch (Exception ignored) {}
+            }
+        }
+
+        try {
+            a.setEndTime(rs.getTime("end_time"));
+        } catch (Exception e) {
+            String str = rs.getString("end_time");
+            if (str != null) {
+                str = str.trim();
+                if (str.length() == 5) str += ":00";
+                try {
+                    a.setEndTime(Time.valueOf(str));
+                } catch (Exception ignored) {}
+            }
+        }
+
         a.setStatus(rs.getString("status"));
-        a.setAllocatedAt(rs.getTimestamp("allocated_at"));
+
+        try {
+            a.setAllocatedAt(rs.getTimestamp("allocated_at"));
+        } catch (Exception ignored) {}
         
         try {
             a.setResourceName(rs.getString("resource_name"));

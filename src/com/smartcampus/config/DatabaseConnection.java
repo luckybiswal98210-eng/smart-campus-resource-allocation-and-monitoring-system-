@@ -78,11 +78,9 @@ public class DatabaseConnection {
         }
     }
 
-    public static synchronized Connection getConnection() throws SQLException {
-        if (connection != null && !connection.isClosed()) {
-            return connection;
-        }
+    private static boolean initialized = false;
 
+    public static synchronized void initDatabase() {
         // 1. Attempt MySQL connection first
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -96,13 +94,13 @@ public class DatabaseConnection {
 
             // Connect to target database
             String dbUrl = "jdbc:mysql://" + dbHost + ":" + dbPort + "/" + dbName + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-            connection = DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+            try (Connection testConn = DriverManager.getConnection(dbUrl, dbUser, dbPassword)) {
+                initializeMySqlTables(testConn);
+            }
             isMySql = true;
             connectionMode = "MySQL (" + dbHost + ":" + dbPort + "/" + dbName + ")";
             System.out.println(" Connected to MySQL Server: " + connectionMode);
-
-            initializeMySqlTables(connection);
-            return connection;
+            initialized = true;
 
         } catch (Exception mysqlEx) {
             System.err.println("⚠️ MySQL connection attempt failed: " + mysqlEx.getMessage());
@@ -112,16 +110,29 @@ public class DatabaseConnection {
             try {
                 Class.forName("org.sqlite.JDBC");
                 String sqliteUrl = "jdbc:sqlite:smart_campus_local.db";
-                connection = DriverManager.getConnection(sqliteUrl);
+                try (Connection sqliteConn = DriverManager.getConnection(sqliteUrl)) {
+                    initializeSqliteTables(sqliteConn);
+                }
                 isMySql = false;
                 connectionMode = "Local SQLite Mode (Fallback)";
                 System.out.println(" Connected to SQLite: smart_campus_local.db");
-
-                initializeSqliteTables(connection);
-                return connection;
+                initialized = true;
             } catch (Exception sqliteEx) {
-                throw new SQLException("Failed to connect to both MySQL and SQLite: " + sqliteEx.getMessage(), sqliteEx);
+                System.err.println("Database init error: " + sqliteEx.getMessage());
             }
+        }
+    }
+
+    public static Connection getConnection() throws SQLException {
+        if (!initialized) {
+            initDatabase();
+        }
+        if (isMySql) {
+            String dbUrl = "jdbc:mysql://" + dbHost + ":" + dbPort + "/" + dbName + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+            return DriverManager.getConnection(dbUrl, dbUser, dbPassword);
+        } else {
+            String sqliteUrl = "jdbc:sqlite:smart_campus_local.db";
+            return DriverManager.getConnection(sqliteUrl);
         }
     }
 
@@ -138,9 +149,9 @@ public class DatabaseConnection {
     }
 
     public static synchronized void reconnect(String host, String port, String name, String user, String pass) throws SQLException {
-        close();
         saveConfig(host, port, name, user, pass);
-        getConnection();
+        initialized = false;
+        initDatabase();
     }
 
     public static synchronized void close() {
